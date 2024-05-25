@@ -4,22 +4,27 @@ import time
 import re
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import timedelta
 
-TIMEOUT = 5
+NUMBER_OF_GENERATORS = 100
+WORKING_TIME = timedelta(seconds=10)
 
 
-def generator(name: str, interval: float, out: mp.Queue) -> None:
+def generator(
+        name: str, interval: float,
+        seed: int, out: mp.Queue
+) -> None:
     """
     Logs generator main function
     :param name: logger name
     :param interval: generation interval
+    :param seed: random seed
     :param out: queue to write logs in
     :return: None
     """
     print(f'{name} is starting with generation interval {interval:.3}s')
     values = list(range(10))
-    rng = random.Random()
+    rng = random.Random(seed)
     while True:
         out.put_nowait(f'{name}:{rng.choice(values)}')
         time.sleep(interval)
@@ -88,8 +93,8 @@ def main() -> None:
         mp.Process(target=resolver, args=(q3,))
     ]
     generators = [
-        mp.Process(target=generator, args=(f'p{i}', random.random(), q1))
-        for i in range(10)
+        mp.Process(target=generator, args=(f'p{i}', random.random(), 10 * i, q1))
+        for i in range(NUMBER_OF_GENERATORS)
     ]
     for g in generators:
         g.start()
@@ -97,7 +102,7 @@ def main() -> None:
     for p in processes:
         p.start()
 
-    time.sleep(10)
+    time.sleep(WORKING_TIME.total_seconds())
 
     for g in generators:
         g.kill()
