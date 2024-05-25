@@ -30,10 +30,10 @@ def collector(in_q: mp.Queue, out: mp.Queue) -> None:
     :param out: queue with output logs
     :return: None
     """
-    log_structure = re.compile('\\s+:\\d+')
+    log_structure = re.compile(r'\w+:\d+')
     while True:
         s = in_q.get()
-        if not log_structure.match(s):
+        if log_structure.match(s) is None:
             print('Bad log')
             continue
 
@@ -85,7 +85,7 @@ def main() -> None:
         mp.Process(target=resolver, args=(q3,))
     ]
     generators = [
-        mp.Process(target=generator, args=(f'Process #{i}', q1))
+        mp.Process(target=generator, args=(f'p{i}', q1))
         for i in range(10)
     ]
     for g in generators:
