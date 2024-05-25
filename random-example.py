@@ -9,18 +9,20 @@ from datetime import datetime
 TIMEOUT = 5
 
 
-def generator(name: str, out: mp.Queue) -> None:
+def generator(name: str, interval: float, out: mp.Queue) -> None:
     """
     Logs generator main function
     :param name: logger name
+    :param interval: generation interval
     :param out: queue to write logs in
     :return: None
     """
+    print(f'{name} is starting with generation interval {interval:.3}s')
     values = list(range(10))
     rng = random.Random()
     while True:
         out.put_nowait(f'{name}:{rng.choice(values)}')
-        time.sleep(0.1)
+        time.sleep(interval)
 
 
 def collector(in_q: mp.Queue, out: mp.Queue) -> None:
@@ -67,6 +69,7 @@ def resolver(in_q: mp.Queue) -> None:
     :param in_q: queue with input messages
     :return: None
     """
+    start = time.time()
     while True:
         name, history = in_q.get()
         if len(history) != 3:
@@ -74,7 +77,7 @@ def resolver(in_q: mp.Queue) -> None:
             continue
 
         if history[0] == history[1] == history[2]:
-            print(f'{name} is broken, received: {history}')
+            print(f'[{time.time() - start:.2f}] {name} is broken, received: {history}')
 
 
 def main() -> None:
@@ -85,7 +88,7 @@ def main() -> None:
         mp.Process(target=resolver, args=(q3,))
     ]
     generators = [
-        mp.Process(target=generator, args=(f'p{i}', q1))
+        mp.Process(target=generator, args=(f'p{i}', random.random(), q1))
         for i in range(10)
     ]
     for g in generators:
